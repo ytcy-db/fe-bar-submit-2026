@@ -1,0 +1,28 @@
+# Databricks Asset Bundle: the end-to-end data journey as code
+#   raw files -> Lakeflow pipeline -> UC governance -> ML train/register/serve
+#   -> batch scoring -> Lakebase publish -> business impact
+bundle:
+  name: officepulse-churn
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    description: Unity Catalog catalog
+    default: ytcy_azure_east2classic_stable
+  schema:
+    description: Schema that holds raw volume, pipeline tables, ML tables and the model
+    default: officepulse_churn
+  lakebase_project:
+    description: Lakebase Autoscaling project id
+    default: officepulse-crm
+  warehouse_id:
+    description: SQL warehouse used by governance SQL / Genie
+    default: 9c8fac7a0b250221
+
+targets:
+  dev:
+    default: true
+    workspace:
+      host: https://adb-7405605463330453.13.azuredatabricks.net

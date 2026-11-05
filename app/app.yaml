@@ -1,0 +1,31 @@
+command:
+  - "uvicorn"
+  - "app:app"
+  - "--host"
+  - "0.0.0.0"
+  - "--port"
+  - "8000"
+
+env:
+  # Unity Catalog namespace of the churn data journey (Lakeflow + ML tables)
+  - name: CRM_CATALOG
+    value: "ytcy_azure_east2classic_stable"
+  - name: CRM_SCHEMA
+    value: "officepulse_churn"
+  # Serverless SQL warehouse (analytical reads of UC gold tables)
+  - name: DATABRICKS_WAREHOUSE_ID
+    valueFrom: sql-warehouse
+  # Custom churn model on Model Serving (real-time what-if)
+  - name: CHURN_MODEL_ENDPOINT
+    valueFrom: churn-model-endpoint
+  # LLM via Unity Catalog model service (Unity AI Gateway)
+  - name: LLM_MODEL_SERVICE
+    value: "ytcy_azure_east2classic_stable.officepulse_churn.churn_advisor_llm"
+  # Genie space (natural-language analytics agent)
+  - name: GENIE_SPACE_ID
+    valueFrom: genie-space
+  # Lakebase Autoscaling (operational serving + app writes)
+  - name: LAKEBASE_ENDPOINT
+    value: "projects/officepulse-crm/branches/production/endpoints/primary"
+  - name: PGDATABASE
+    value: "databricks_postgres"

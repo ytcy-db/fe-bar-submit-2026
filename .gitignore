@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# Node
+node_modules/
+npm-debug.log*
+frontend/node_modules/
+
+# ビルド成果物: frontend/dist はデプロイに必要なのでコミットする（除外しない）
+# frontend/dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Databricks
+.databricks/
+
+# OS
+.DS_Store
+
+# ローカルの一時トークン等
+*.token
+
+# ローカルのツールログ等
+.claude/

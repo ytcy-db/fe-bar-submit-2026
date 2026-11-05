@@ -1,0 +1,17 @@
+resources:
+  pipelines:
+    officepulse_churn_pipeline:
+      name: officepulse-churn-lakeflow
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+      serverless: true
+      photon: true
+      channel: CURRENT
+      continuous: false
+      root_path: ../pipelines/officepulse_churn
+      configuration:
+        raw_path: /Volumes/${var.catalog}/${var.schema}/raw
+        mask_function: ${var.catalog}.${var.schema}.mask_contact
+      libraries:
+        - glob:
+            include: ../pipelines/officepulse_churn/transformations/**

@@ -1,0 +1,48 @@
+resources:
+  jobs:
+    officepulse_churn_e2e:
+      name: officepulse-churn-e2e
+      description: End-to-end churn-prevention data journey (raw -> Lakeflow -> UC -> ML -> Lakebase)
+      max_concurrent_runs: 1
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+      tasks:
+        - task_key: generate_raw_data
+          notebook_task:
+            notebook_path: ../notebooks/01_generate_raw_data.py
+        - task_key: lakeflow_pipeline
+          depends_on:
+            - task_key: generate_raw_data
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.officepulse_churn_pipeline.id}
+            full_refresh: true
+        - task_key: uc_governance
+          depends_on:
+            - task_key: lakeflow_pipeline
+          notebook_task:
+            notebook_path: ../notebooks/02_uc_governance.py
+        - task_key: train_register_serve
+          depends_on:
+            - task_key: lakeflow_pipeline
+          notebook_task:
+            notebook_path: ../notebooks/03_train_register_serve.py
+        - task_key: batch_score
+          depends_on:
+            - task_key: train_register_serve
+          notebook_task:
+            notebook_path: ../notebooks/04_batch_score.py
+        - task_key: publish_lakebase
+          depends_on:
+            - task_key: batch_score
+          notebook_task:
+            notebook_path: ../notebooks/05_publish_lakebase.py
+            base_parameters:
+              lakebase_project: ${var.lakebase_project}
+        - task_key: business_impact
+          depends_on:
+            - task_key: batch_score
+          notebook_task:
+            notebook_path: ../notebooks/06_business_impact.py
