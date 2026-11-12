@@ -1,13 +1,13 @@
 """Build the business deck (HTML -> PDF via headless Chrome, plus a Markdown export).
 
 Numbers come from the committed job run (evidence/job_run_summary.md, notebooks 03 and 06).
-usage: python deck/build_deck.py
+usage: python deck/build_deck.py   (Japanese version: python deck/build_deck_ja.py)
 """
 import html
 import subprocess
 
 N = dict(
-    arr="¥2.19B", arr_usd="≈ $14.6M", churn_arr="¥330M", churn_logos="93", grr="84.6%", grr_ml="86.7%", grr_pts="+2.1 pts",
+    arr="¥2.19B", arr_start="¥2.14B", arr_usd="≈ $14.6M", churn_arr="¥330M", churn_logos="93", grr="84.6%", grr_ml="86.7%", grr_pts="+2.1 pts",
     saved_sq="¥15.4M", saved_ml="¥60.0M", saved_inc="+¥44.5M", saved_inc_usd="≈ $300k",
     cov_ml="60.6%", cov_rules="53.9%", cov_sq="0%", prec_ml="63%", prec_rules="59%",
     auc_ml="0.847", auc_rules="0.772", pr_ml="0.621", pr_rules="0.393", top10_ml="76%", top10_rules="40%",
@@ -113,7 +113,7 @@ head = ["Save rate when a play starts ≥ 90 days before renewal", "ARR retained
 rows = [["20%", "¥40.0M", "+¥24.5M", "85.8%"], ["30% (base case)", N["saved_ml"], f"<b>{N['saved_inc']}</b>", f"<b>{N['grr_ml']}</b>"], ["40%", "¥80.0M", "+¥64.5M", "87.6%"]]
 slide("Business case and assumptions", "Conservative, transparent, adjustable",
       table(head, rows, 2) + bullets([
-          f"Base: trailing-12-month churned ARR {N['churn_arr']} on a {N['arr']} starting ARR (Lakeflow gold tables)",
+          f"Base: trailing-12-month churned ARR {N['churn_arr']} on a {N['arr_start']} starting ARR (Lakeflow gold tables)",
           f"Early coverage = {N['cov_ml']} of churning ARR flagged at T-90 (out-of-time test)",
           f"Today: plays start only after a cancellation ticket ({N['ticket_share']} of churners), save rate 10% → {N['saved_sq']}/year",
           "Assumptions are parameters of the business-impact notebook — the pilot replaces them with measured save rates"]),
@@ -196,22 +196,29 @@ td { border-bottom: 1px solid #dfe5e8; padding: .1in .14in } td.hl { background:
 .foot { position: absolute; bottom: .22in; right: .7in; font-size: 10pt; color: #8a9aa1 }
 """
 
-parts = []
-for i, (t, k, b, _) in enumerate(SLIDES, start=1):
-    cls = "slide title" if i == 1 else "slide"
-    parts.append(f'<section class="{cls}"><div class="kicker">{k}</div><h1>{t}</h1>{b}'
-                 f'<div class="foot">OfficePulse churn prevention · {i}/{len(SLIDES)}</div></section>')
-open("deck/OfficePulse_Churn_Prevention_Deck.html", "w").write(
-    f"<!doctype html><html><head><meta charset='utf-8'><title>OfficePulse churn prevention</title><style>{CSS}</style></head><body>{''.join(parts)}</body></html>")
+def render(slides, base, title, footer, lang="en", css_extra=""):
+    """Write deck/<base>.html, .md and .pdf for the given slides."""
+    import os
+    parts = []
+    for i, (t, k, b, _) in enumerate(slides, start=1):
+        cls = "slide title" if i == 1 else "slide"
+        parts.append(f'<section class="{cls}"><div class="kicker">{k}</div><h1>{t}</h1>{b}'
+                     f'<div class="foot">{footer} · {i}/{len(slides)}</div></section>')
+    html_path = f"deck/{base}.html"
+    open(html_path, "w").write(
+        f"<!doctype html><html lang='{lang}'><head><meta charset='utf-8'><title>{footer}</title>"
+        f"<style>{CSS}{css_extra}</style></head><body>{''.join(parts)}</body></html>")
+    md = [f"# {title}\n"]
+    for i, (t, k, _, m) in enumerate(slides, start=1):
+        md.append(f"\n---\n\n## {i}. {t}\n*{k}*\n\n{m}\n")
+    open(f"deck/{base}.md", "w").write("\n".join(md))
+    chrome = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+    subprocess.run([chrome, "--headless=new", "--disable-gpu", "--no-pdf-header-footer", "--user-data-dir=/tmp/chdeck",
+                    f"--print-to-pdf=deck/{base}.pdf", "file://" + os.path.abspath(html_path)], capture_output=True)
+    print(f"built deck/{base}.{{html,md,pdf}}")
 
-md = ["# See churn 90 days before the customer says goodbye — OfficePulse Churn-Prevention CRM on Databricks\n"]
-for i, (t, k, _, m) in enumerate(SLIDES, start=1):
-    md.append(f"\n---\n\n## {i}. {t}\n*{k}*\n\n{m}\n")
-open("deck/OfficePulse_Churn_Prevention_Deck.md", "w").write("\n".join(md))
 
-chrome = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-subprocess.run([chrome, "--headless=new", "--disable-gpu", "--no-pdf-header-footer", "--user-data-dir=/tmp/chdeck",
-                "--print-to-pdf=deck/OfficePulse_Churn_Prevention_Deck.pdf",
-                "file://" + __import__("os").path.abspath("deck/OfficePulse_Churn_Prevention_Deck.html")],
-               capture_output=True)
-print("built deck/OfficePulse_Churn_Prevention_Deck.{html,md,pdf}")
+if __name__ == "__main__":
+    render(SLIDES, "OfficePulse_Churn_Prevention_Deck",
+           "See churn 90 days before the customer says goodbye — OfficePulse Churn-Prevention CRM on Databricks",
+           "OfficePulse churn prevention")
